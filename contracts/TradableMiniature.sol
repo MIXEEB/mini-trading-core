@@ -19,8 +19,19 @@ contract TradableMiniature is ERC721 {
   Counters.Counter private _tokenIds;
   Miniature[] public miniatures; 
 
+  event Minted(string name, string url, uint256 price, uint256 id);
+
   constructor() ERC721("TradableMiniature", "TDMT") {
     _tokenIds.increment();
+  }
+
+  function createMiniaturesBatch(string[] memory _names, string[] memory _descriptions, string[] memory _urls, uint256[] memory _prices) public returns(uint256[] memory) {
+    require(_names.length == _descriptions.length && _names.length == _urls.length && _names.length == _prices.length, "Arrays must have the same length");
+    uint256[] memory newIds = new uint256[](_names.length);
+    for (uint256 i = 0; i < _names.length; i++) {
+      newIds[i] = createMiniature(_names[i], _descriptions[i], _urls[i], _prices[i]);
+    }
+    return newIds;
   }
 
   function createMiniature(string memory _name, string memory _description, string memory _url, uint256 _price) public returns(uint256) {
@@ -29,12 +40,13 @@ contract TradableMiniature is ERC721 {
     miniatures.push(newMiniature);
     _safeMint(msg.sender, miniatures.length);
     _tokenIds.increment();
+
+    emit Minted(newMiniature.name, newMiniature.url, newMiniature.price, newMiniature.id);
     return newId;
   }
 
   function buyMiniature(uint256 _index) public payable {
     Miniature memory miniature = miniatures[_index];
-    require(msg.value == miniature.price, "Price not met");
     require(msg.value >= miniature.price, "Not enough funds sent");
     require(miniature.owner != msg.sender, "You already own this miniature");
     payable(miniature.owner).transfer(msg.value);
